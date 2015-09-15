@@ -1,0 +1,488 @@
+######################################################################
+#
+#~~~~~~~~~ TopHRU - Threshold optimization for HRUs in SWAT ~~~~~~~~~~~~
+#
+# Purpose: Calculates the spatial error (aREA - average Relative Error
+#          of Aggregation) for thousands of different SWAT input data 
+#          aggregation levels based on HRU thresholds for land use, 
+#          soil, and (optional) slope and identifies pareto-optimal 
+#          solutions to minimze the trade-off between computation time 
+#          and spatial error
+#
+# Input: The "hrus" table exported as txt-file from the SWAT project 
+#        database after defining HRUs without applying thresholds 
+#        (0 for land use, soil, and slope)
+#
+# Authors: Robert Schweppe, Michael Strauch
+#
+# Contact: michael.strauch@ufz.de
+######################################################################
+
+
+######################################################################
+#### (1) install and load required R-Packages
+
+#install.packages("abind")
+library(abind)
+#install.packages("emoa")
+library(emoa)
+#install.packages("plyr")
+library(plyr)
+
+######################################################################
+#### (2) Read in the TopHRU function
+
+TopHRU <- function(input.data, thr_type, thr_min, thr_max, thr_step) {
+  # For percentage method get fractions between 0 and 1
+  if (thr_type == "P"){
+    thr_min <- thr_min/100
+    thr_max <- thr_max/100
+    thr_step <- thr_step/100
+  }
+  
+  #### FUNCTIONS
+  # Define function for generating factors by applying thresholds (type "Area") to a distribution
+  if (thr_type == "A"){
+    reapp_fac <- function(x, thr){
+      fac <- x
+      if(all(x == 0))
+      {fac[] <- 0}
+      else{
+        if(sum(x >= thr) == 0){
+          fac[which.max(x)] <- sum(x) / max(x)
+          fac[-c(which.max(x))] <- 0
+        }
+        else{
+          fac[x >= thr] <- sum(x) / sum(x[x >= thr])
+          fac[x < thr] <- 0
+        }
+      }
+      return(fac)
+    }
+  }
+  
+  # Define function for generating factors by applying thresholds (type "Percentage") to a distribution
+  if (thr_type == "P"){
+    reapp_fac <- function(x, thr){
+      fac <- x
+      if(all(x == 0))
+      {fac[] <- 0}
+      else{
+        if(sum(x >= thr * sum(x)) == 0){
+          fac[which.max(x)] <- sum(x) / max(x)
+          fac[-c(which.max(x))] <- 0
+        }
+        else{
+          fac[x >= thr * sum(x)] <- sum(x) / sum(x[x >= thr * sum(x)])
+          fac[x < thr * sum(x)] <- 0
+        }
+      }
+      return(fac)
+    }
+  }
+  
+  # Define function for the error measure
+  aREA <- function(x){
+    y <- sum(abs(x))
+    return(y)
+  }
+  
+  #### CALCULATION
+  # Calculation for single slope HRU setups 
+  if (unique(input.data$SLP)[1] == "0-9999") {
+    # Generate sequence out of threshold range, then generate list of all possible combinations
+    thr_seq <- seq(thr_min, thr_max, by = thr_step)
+    threshold <- matrix(data = c(rep(thr_seq, times = length(thr_seq)),
+                                 rep(thr_seq, each = length(thr_seq), times = 1)),
+                        ncol = 2, dimnames = list(1 : length(thr_seq)^2, c("LU_thr", "SOIL_thr")))
+    
+    # Read out all existing categories for subbasin, landuse, and soil
+    SUB_ID <- sort(unique(input.data$SUBBASIN))
+    LU_ID <- sort(unique(input.data$LANDUSE))
+    SOIL_ID <- sort(unique(input.data$SOIL))
+    
+    # Generate data structures for default area distribution of each hierarchy level
+    # Default distribution is the distribution without thresholds applied, not aggregated ("tree structure")
+    LU.default <- matrix(data = NA, ncol = length(SUB_ID),
+                         nrow = length(LU_ID), dimnames = list(LU_ID, SUB_ID))
+    SOIL.default <- array(data = NA, dim = c(length(SOIL_ID), length(SUB_ID), length(LU_ID)),
+                          dimnames = list(SOIL_ID, SUB_ID, LU_ID))
+    
+    # Calculate default area distribution of each hierachy level, set non existing values from NA to 0
+    LU.default <- with(input.data, tapply(ARSO, list(LANDUSE, SUBBASIN), sum))
+    LU.default[is.na(LU.default)] <- 0
+    
+    SOIL.default[,,] <- with(input.data, tapply(ARSO, list(SOIL, SUBBASIN, LANDUSE), sum))
+    SOIL.default[,,][is.na(SOIL.default[,,])] <- 0
+    
+    # Generate data structures for the area reference distribution of each hierachy level
+    # reference distribution is the distribution without thresholds applied, aggregated for each hierarchy level per sub
+    LU.ref <- array(data = NA, dim = c(length(SUB_ID), length(LU_ID), nrow(threshold)),
+                    dimnames = list(SUB_ID, LU_ID, rownames(threshold)))
+    SOIL.ref <- array(data = NA, dim = c(length(SUB_ID), length(SOIL_ID), nrow(threshold)),
+                      dimnames = list(SUB_ID, SOIL_ID, rownames(threshold)))
+    
+    # Generate data structures for computed area distribution of each hierachy level
+    # Computed distribution is the distribution with thresholds applied, aggregated for each hierarchy level per sub
+    LU.cal <- array(data = NA, dim = c(length(SUB_ID), length(LU_ID), nrow(threshold)),
+                    dimnames = list(SUB_ID, LU_ID, rownames(threshold)))
+    SOIL.cal <- array(data = NA, dim = c(length(SUB_ID), length(SOIL_ID), nrow(threshold)),
+                      dimnames = list(SUB_ID, SOIL_ID, rownames(threshold)))
+    
+    # Generate data structures for factors that are applied according default distribution
+    # Factors are generated by applying thresholds to default distribution
+    # if a factor = 0, then the element is erased,
+    # if a factor = 1, then all elements remain unchanged,
+    # if a factor > 1, then the element is reapportionated by the factor due to loss of other elements
+    LU.fac <- array(data = NA, dim = c(length(LU_ID), length(SUB_ID), length(thr_seq)),
+                    dimnames = list(LU_ID, SUB_ID, thr_seq))
+    SOIL.fac <- array(data = NA, dim = c(length(SOIL_ID), length(SUB_ID), length(LU_ID), length(thr_seq)),
+                      dimnames = list(SOIL_ID, SUB_ID, LU_ID, thr_seq))
+    
+    # Generate data structure for the residuals between the reference and computed distribution
+    LU.err <- array(data = NA, dim = c(length(SUB_ID), length(LU_ID), nrow(threshold)),
+                    dimnames = list(SUB_ID, LU_ID, rownames(threshold)))
+    SOIL.err <- array(data = NA, dim = c(length(SUB_ID), length(SOIL_ID), nrow(threshold)),
+                      dimnames = list(SUB_ID, SOIL_ID, rownames(threshold)))
+    
+    # Generate data structure for the result of the analysis
+    result <- data.frame(matrix(data = NA, ncol = 3, nrow = nrow(threshold),
+                                dimnames = list(NULL, c("thr_comb", "n_HRU", "aREA"))))
+    
+
+    ## CALCULATION
+    # The part where the actual calculation takes places
+    # Calculation of factors for each hierarchical level,
+    # for LANDUSE the factors depend on landuse, subbasin and threshold (in that order in array dimensions)
+    # for SOIL the factors depend on soil, subbasin, landuse and threshold
+    for (i in seq(along = thr_seq)){
+      LU.fac[,,i] <- apply(LU.default, 2,
+                           reapp_fac, thr = thr_seq[i])
+      
+      SOIL.fac[,,,i] <- apply(SOIL.default[,,], c(2, 3),
+                              reapp_fac, thr = thr_seq[i])
+    }
+    
+    # Calculation of area distributions for each hierarchy level depending on threshold combination
+    # AREA for each default HRU is multiplied by the factors for each level
+    # Factors are selected from factor data structure, e.g. SOIL.fac
+    # Using the columns LANDUSE AND SOIL in input.data and the according threshold as indices
+    # the so "updated AREA" is then aggregated according to each hierarchy level
+    # The number of resulting HRU is calculated by counting all cells of "updated AREA" that are > 0
+    for (j in seq(along = rep(thr_seq, times = length(thr_seq)))){
+      AREA_mod <- with(input.data, ARSO * LU.fac[cbind(LANDUSE, SUBBASIN, which(thr_seq == threshold[j, 1]))] *
+                         SOIL.fac[cbind(SOIL, SUBBASIN, LANDUSE, which(thr_seq == threshold[j, 2]))])
+      
+      LU.cal[,,j] <- with(input.data, tapply(AREA_mod, list(SUBBASIN, LANDUSE), sum))
+      SOIL.cal[,,j] <- with(input.data, tapply(AREA_mod, list(SUBBASIN, SOIL), sum))
+      
+      result[j,2] <- with(input.data, sum(AREA_mod > 0))
+    }
+    
+    # Set non existing values from NA to 0
+    LU.cal[,,][is.na(LU.cal[,,])] <- 0
+    SOIL.cal[,,][is.na(SOIL.cal[,,])] <- 0
+    
+    # Calculate reference area distribution of each hierachy level, extend format of matrix by
+    # the number of threshold combinations to match the format of data structure for calculated values
+    # set non existing values from NA to 0
+    LU.ref <- array(rep(with(input.data, tapply(ARSO, list(SUBBASIN, LANDUSE), sum)), times = nrow(threshold)),
+                    dim = c(length(SUB_ID),length(LU_ID),nrow(threshold)))
+    LU.ref[is.na(LU.ref)] <- 0
+    SOIL.ref <- array(rep(with(input.data, tapply(ARSO, list(SUBBASIN, SOIL), sum)), times = nrow(threshold)),
+                      dim = c(length(SUB_ID),length(SOIL_ID),nrow(threshold)))
+    SOIL.ref[is.na(SOIL.ref)] <- 0
+    
+    # Calculate residuals between computed and reference values and divide by two
+    LU.err <- (LU.cal-LU.ref)/2
+    SOIL.err <- (SOIL.cal-SOIL.ref)/2
+    
+    # Create results table showing thr_set, number of calculated HRU and error measure
+    # For percentage method convert fraction between 0 and 1 to percentage
+    if (thr_type == "P"){
+      thr_min <- thr_min*100
+      thr_max <- thr_max*100
+      thr_step <- thr_step*100
+      thr_seq <- seq(thr_min, thr_max, by = thr_step)
+    }
+    
+    # Combine single thresholds to single character
+    
+    result[,1] <- paste(rep(thr_seq, times = length(thr_seq)), "_",
+                        rep(thr_seq, times = 1, each = length(thr_seq)),
+                        sep = "")
+    
+    # Apply error measure
+    result[,3] <- apply(abind(LU.err, SOIL.err, along = 2),c(3), aREA) /
+      (2 * with(input.data, sum(ARSO)))
+  }
+  
+  ## Calculation for multi-slope HRU setups 
+  else {
+    # Generate sequence out of threshold range, then generate list of all possible combinations
+    thr_seq <- seq(thr_min, thr_max, by = thr_step)
+    threshold <- matrix(data = c(rep(thr_seq, times = length(thr_seq)^2),
+                                 rep(thr_seq, each = length(thr_seq), times = length(thr_seq)),
+                                 rep(thr_seq, each = length(thr_seq)^2)),
+                        ncol = 3, dimnames = list(1 : length(thr_seq)^3, c("LU_thr", "SOIL_thr", "SLOPE_thr")))
+    
+    # Read out all existing categories for subbasin, landuse, soil and slope
+    SUB_ID <- sort(unique(input.data$SUBBASIN))
+    LU_ID <- sort(unique(input.data$LANDUSE))
+    SOIL_ID <- sort(unique(input.data$SOIL))
+    SLOPE_ID <- sort(unique(input.data$SLP))
+    
+    # Generate data structures for default area distribution of each hierarchy level
+    # Default distribution is the distribution without thresholds applied, not aggregated ("tree structure")
+    LU.default <- matrix(data = NA, ncol = length(SUB_ID),
+                         nrow = length(LU_ID), dimnames = list(LU_ID, SUB_ID))
+    SOIL.default <- array(data = NA, dim = c(length(SOIL_ID), length(SUB_ID), length(LU_ID)),
+                          dimnames = list(SOIL_ID, SUB_ID, LU_ID))
+    SLOPE.default <- array(data = NA, dim = c(length(SLOPE_ID), length(SUB_ID), length(LU_ID), length(SOIL_ID)),
+                           dimnames = list(SLOPE_ID, SUB_ID, LU_ID, SOIL_ID))
+    
+    # Calculate default area distribution of each hierachy level, set non existing values from NA to 0
+    LU.default <- with(input.data, tapply(ARSLP, list(LANDUSE, SUBBASIN), sum))
+    LU.default[is.na(LU.default)] <- 0
+    
+    SOIL.default[,,] <- with(input.data, tapply(ARSLP, list(SOIL, SUBBASIN, LANDUSE), sum))
+    SOIL.default[,,][is.na(SOIL.default[,,])] <- 0
+    
+    SLOPE.default[,,,] <- with(input.data, tapply(ARSLP, list(SLP, SUBBASIN, LANDUSE, SOIL), sum))
+    SLOPE.default[,,,][is.na(SLOPE.default[,,,])] <- 0
+    
+    # Generate data structures for the area reference distribution of each hierachy level
+    # reference distribution is the distribution without thresholds applied, aggregated for each hierarchy level per sub
+    LU.ref <- array(data = NA, dim = c(length(SUB_ID), length(LU_ID), nrow(threshold)),
+                    dimnames = list(SUB_ID, LU_ID, rownames(threshold)))
+    SOIL.ref <- array(data = NA, dim = c(length(SUB_ID), length(SOIL_ID), nrow(threshold)),
+                      dimnames = list(SUB_ID, SOIL_ID, rownames(threshold)))
+    SLOPE.ref <- array(data = NA, dim = c(length(SUB_ID), length(SLOPE_ID), nrow(threshold)),
+                       dimnames = list(SUB_ID, SLOPE_ID, rownames(threshold)))
+    
+    # Generate data structures for computed area distribution of each hierachy level
+    # Computed distribution is the distribution with thresholds applied, aggregated for each hierarchy level per sub
+    LU.cal <- array(data = NA, dim = c(length(SUB_ID), length(LU_ID), nrow(threshold)),
+                    dimnames = list(SUB_ID, LU_ID, rownames(threshold)))
+    SOIL.cal <- array(data = NA, dim = c(length(SUB_ID), length(SOIL_ID), nrow(threshold)),
+                      dimnames = list(SUB_ID, SOIL_ID, rownames(threshold)))
+    SLOPE.cal <- array(data = NA, dim = c(length(SUB_ID), length(SLOPE_ID), nrow(threshold)),
+                       dimnames = list(SUB_ID, SLOPE_ID, rownames(threshold)))
+    
+    # Generate data structures for factors that are applied according default distribution
+    # Factors are generated by applying thresholds to default distribution
+    # if a factor = 0, then the element is erased,
+    # if a factor = 1, then all elements remain unchanged,
+    # if a factor > 1, then the element is reapportionated by the factor due to loss of other elements
+    LU.fac <- array(data = NA, dim = c(length(LU_ID), length(SUB_ID), length(thr_seq)),
+                    dimnames = list(LU_ID, SUB_ID, thr_seq))
+    SOIL.fac <- array(data = NA, dim = c(length(SOIL_ID), length(SUB_ID), length(LU_ID), length(thr_seq)),
+                      dimnames = list(SOIL_ID, SUB_ID, LU_ID, thr_seq))
+    SLOPE.fac <- array(data = NA, dim = c(length(SLOPE_ID), length(SUB_ID), length(LU_ID),
+                                          length(SOIL_ID), length(thr_seq)),
+                       dimnames = list(SLOPE_ID, SUB_ID, LU_ID, SOIL_ID, thr_seq))
+    
+    # Generate data structure for the residuals between the reference and computed distribution
+    LU.err <- array(data = NA, dim = c(length(SUB_ID), length(LU_ID), nrow(threshold)),
+                    dimnames = list(SUB_ID, LU_ID, rownames(threshold)))
+    SOIL.err <- array(data = NA, dim = c(length(SUB_ID), length(SOIL_ID), nrow(threshold)),
+                      dimnames = list(SUB_ID, SOIL_ID, rownames(threshold)))
+    SLOPE.err <- array(data = NA, dim = c(length(SUB_ID), length(SLOPE_ID), nrow(threshold)),
+                       dimnames = list(SUB_ID, SLOPE_ID, rownames(threshold)))
+    
+    # Generate data structure for the result of the analysis
+    result <- data.frame(matrix(data = NA, ncol = 3, nrow = nrow(threshold),
+                                dimnames = list(NULL, c("thr_comb", "n_HRU", "aREA"))))
+    
+    ## CALCULATION
+    # The part where the actual calculation takes places
+    # Calculation of factors for each hierarchical level,
+    # for LANDUSE the factors depend on landuse, subbasin and threshold (in that order in array dimensions)
+    # for SOIL the factors depend on soil, subbasin, landuse and threshold
+    # for SLOPE the factors depend on slope, subbasin, landuse, soil and threshold
+    for (i in seq(along = thr_seq)){
+      LU.fac[,,i] <- apply(LU.default, 2,
+                           reapp_fac, thr = thr_seq[i])
+      
+      SOIL.fac[,,,i] <- apply(SOIL.default[,,], c(2, 3),
+                              reapp_fac, thr = thr_seq[i])
+      
+      SLOPE.fac[,,,,i] <- apply(SLOPE.default[,,,], c(2, 3, 4),
+                                reapp_fac, thr = thr_seq[i])
+    }
+    
+    # Calculation of area distributions for each hierarchy level depending on threshold combination
+    # AREA for each default HRU is multiplied by the factors for each level
+    # Factors are selected from factor data structure, e.g. SLOPE.fac
+    # Using the columns LANDUSE, SOIL, SLOPE in input.data and the according threshold as indices
+    # the so "updated AREA" is then aggregated according to each hierarchy level
+    # The number of resulting HRU is calculated by counting all cells of "updated AREA" that are > 0
+    for (j in seq(along = rep(thr_seq, times = length(thr_seq) ^ 2))){
+      AREA_mod <- with(input.data, ARSLP * LU.fac[cbind(LANDUSE, SUBBASIN, which(thr_seq == threshold[j, 1]))] *
+                         SOIL.fac[cbind(SOIL, SUBBASIN, LANDUSE, which(thr_seq == threshold[j, 2]))] *
+                         SLOPE.fac[cbind(SLP, SUBBASIN, LANDUSE, SOIL, (which(thr_seq == threshold[j, 3])))])
+      
+      LU.cal[,,j] <- with(input.data, tapply(AREA_mod, list(SUBBASIN, LANDUSE), sum))
+      SOIL.cal[,,j] <- with(input.data, tapply(AREA_mod, list(SUBBASIN, SOIL), sum))
+      SLOPE.cal[,,j] <- with(input.data, tapply(AREA_mod, list(SUBBASIN, SLP), sum))
+      
+      result[j,2] <- with(input.data, sum(AREA_mod > 0))
+    }
+    
+    # Set non existing values from NA to 0
+    LU.cal[,,][is.na(LU.cal[,,])] <- 0
+    SOIL.cal[,,][is.na(SOIL.cal[,,])] <- 0
+    SLOPE.cal[,,][is.na(SLOPE.cal[,,])] <- 0
+    
+    # Calculate reference area distribution of each hierachy level, extend format of matrix by
+    # the number of threshold combinations to match the format of data structure for calculated values
+    # set non existing values from NA to 0
+    LU.ref <- array(rep(with(input.data, tapply(ARSLP, list(SUBBASIN, LANDUSE), sum)), times = nrow(threshold)),
+                    dim = c(length(SUB_ID),length(LU_ID),nrow(threshold)))
+    LU.ref[is.na(LU.ref)] <- 0
+    SOIL.ref <- array(rep(with(input.data, tapply(ARSLP, list(SUBBASIN, SOIL), sum)), times = nrow(threshold)),
+                      dim = c(length(SUB_ID),length(SOIL_ID),nrow(threshold)))
+    SOIL.ref[is.na(SOIL.ref)] <- 0
+    SLOPE.ref <- array(rep(with(input.data, tapply(ARSLP, list(SUBBASIN, SLP), sum)), times = nrow(threshold)),
+                       dim = c(length(SUB_ID),length(SLOPE_ID),nrow(threshold)))
+    SLOPE.ref[is.na(SLOPE.ref)] <- 0
+    
+    # Calculate residuals between computed and reference values and divide by two
+    LU.err <- (LU.cal-LU.ref)/2
+    SOIL.err <- (SOIL.cal-SOIL.ref)/2
+    SLOPE.err <- (SLOPE.cal-SLOPE.ref)/2
+    
+    # Create results table showing thr_set, number of calculated HRU and error measure
+    # For percentage method convert fraction between 0 and 1 to percentage
+    if (thr_type == "P"){
+      thr_min <- thr_min*100
+      thr_max <- thr_max*100
+      thr_step <- thr_step*100
+      thr_seq <- seq(thr_min, thr_max, by = thr_step)
+    }
+    
+    # Combine single thresholds to single character
+    
+    result[,1] <- paste(rep(thr_seq, times = length(thr_seq)^2), "_",
+                        rep(thr_seq, times = length(thr_seq), each = length(thr_seq)), "_",
+                        rep(thr_seq, each = length(thr_seq)^2),
+                        sep = "")
+    
+    # Apply error measure
+    result[,3] <- apply(abind(LU.err, SOIL.err, SLOPE.err, along = 2),c(3), aREA) /
+      (3 * with(input.data, sum(ARSLP)))
+  }  
+
+  #### OUTPUTS 
+    
+  if (thr_type == "P") {
+      results.P <- result
+      write.table(file = paste("P_",thr_min,"_",thr_max,"_table.txt",sep=""), results.P, col.names = TRUE, sep = ",", append = FALSE)
+      results.P.t <- t(cbind(as.numeric(results.P[,2]),results.P[,3]))
+      results.P.nondom <- t(nondominated_points(results.P.t))
+      results.P.nondom <- as.data.frame(results.P.nondom)
+      results.P.nondom$ID <- ""
+      results.P.nondom$ID <- paste(results.P.nondom[,1],"_",results.P.nondom[,2],sep="")
+      results.P$ID <- ""
+      results.P$ID <- paste(results.P[,2],"_",results.P[,3],sep="")
+      results.P.nondom <- join(results.P.nondom,results.P, by="ID", type = "left", match = "first")
+      results.P.nondom <- results.P.nondom[,-c(1:3)]
+      results.P.nondom <- results.P.nondom[!duplicated(results.P.nondom),]
+      results.P.nondom.sorted <- results.P.nondom[order(results.P.nondom$n_HRU, decreasing = T),]
+      View(results.P.nondom.sorted)
+      write.table(file = paste("P_",thr_min,"_",thr_max,"_non-dom_table.txt", sep=""), results.P.nondom, col.names = TRUE, sep = ",", append = FALSE)
+      par(oma = c(1, 1, 1, 1))
+      pdf(paste("P_",thr_min,"_",thr_max,"_figure.pdf", sep=""),width=7,height=7)
+      plot(x = nrow(input.data) - results.P[,2], y = results.P[,3],
+           xlab = paste("Number of HRUs reduced from",nrow(input.data),sep=" "), ylab = "aREA")
+      points(x = nrow(input.data) - results.P.nondom[,2], y = results.P.nondom[,3],
+             type="p", col="red")
+      legend("top",
+             c("all HRU threshold solutions","non-dominated HRU threshold solutions"),
+             col = c("black", "red"),
+             pch = c(1, 1))
+      dev.off()
+      plot(x = nrow(input.data) - results.P[,2], y = results.P[,3],
+           xlab = paste("Number of HRUs reduced from",nrow(input.data),sep=" "), ylab = "aREA")
+      points(x = nrow(input.data) - results.P.nondom[,2], y = results.P.nondom[,3],
+             type="p", col="red")
+      legend("top",
+             c("all HRU threshold solutions","non-dominated HRU threshold solutions"),
+             col = c("black", "red"),
+             pch = c(1, 1))
+    }
+    
+  if (thr_type == "A") {
+      results.A <- result
+      write.table(file = paste("A_",thr_min,"_",thr_max,"_table.txt",sep=""), results.A, col.names = TRUE, sep = ",", append = FALSE)
+      results.A.t <- t(cbind(as.numeric(results.A[,2]),results.A[,3]))
+      results.A.nondom <- t(nondominated_points(results.A.t))
+      results.A.nondom <- as.data.frame(results.A.nondom)
+      results.A.nondom$ID <- ""
+      results.A.nondom$ID <- paste(results.A.nondom[,1],"_",results.A.nondom[,2],sep="")
+      results.A$ID <- ""
+      results.A$ID <- paste(results.A[,2],"_",results.A[,3],sep="")
+      results.A.nondom <- join(results.A.nondom,results.A, by="ID",type = "left", match = "first")
+      results.A.nondom <- results.A.nondom[,-c(1:3)]
+      results.A.nondom <- results.A.nondom[!duplicated(results.A.nondom),]
+      results.A.nondom.sorted <- results.A.nondom[order(results.A.nondom$n_HRU, decreasing = T),]
+      View(results.A.nondom.sorted)
+      write.table(file = paste("A_",thr_min,"_",thr_max,"_table_non-dom.txt", sep=""), results.A.nondom, col.names = TRUE, sep = ",", append = FALSE)
+      par(oma = c(1, 1, 1, 1))
+      pdf(paste("A_",thr_min,"_",thr_max,"_figure.pdf", sep=""),width=7,height=7)
+      plot(x = nrow(input.data) - results.A[,2], y = results.A[,3],
+           xlab = paste("Number of HRUs reduced from",nrow(input.data),sep=" "), ylab = "aREA")
+      points(x = nrow(input.data) - results.A.nondom[,2], y = results.A.nondom[,3],
+             type="p", col="red")
+      legend("top",
+             c("all HRU threshold solutions","non-dominated HRU threshold solutions"),
+             col = c("black", "red"),
+             pch = c(1, 1))
+      dev.off()
+      plot(x = nrow(input.data) - results.A[,2], y = results.A[,3],
+           xlab = paste("Number of HRUs reduced from",nrow(input.data),sep=" "), ylab = "aREA")
+      points(x = nrow(input.data) - results.A.nondom[,2], y = results.A.nondom[,3],
+             type="p", col="red")
+      legend("top",
+             c("all HRU threshold solutions","non-dominated HRU threshold solutions"),
+             col = c("black", "red"),
+             pch = c(1, 1))
+  }
+}
+
+######################################################################
+##### (3) Read in the "hrus" txt table,
+#####     define threshold settings,
+#####     and run TopHRU
+
+# INSERT working directory (the location of your hrus table).
+# The hrus table has to be exported as txt-file from the SWAT project 
+# database (including the column names in first line) after defining 
+# HRUs (via SWAT GIS-interface) without applying any thresholds 
+# (i.e. 0 for land use, soil, and slope).
+# The ouput files of TopHRU will also be written into this directory.
+setwd("C:/+STRAUCH+/R_development/test")
+
+# INSERT name of the full-hru table
+hrus_table <- read.table("hrus.txt", header = TRUE, fill = TRUE, sep = ",")
+
+# INSERT threshold settings
+# NOTE: if thr_type is "P", then values must be numbers from 0 to 100 (%);
+#       if thr_type is "A", enter values in ha
+# Some practical advices (typical settings): 
+# (1) a thr_min value of 0
+# (2) with thr_max values between 10 to 40% of the average subbasin area (in ha for type "A"!)
+# (3) and thr_step values between 1/20 to 1/40 of thr_max
+# ensures testing a range of typical threshold combinations and identifying
+# solutions with lowest spatial error (aREA), but NOTE:
+# Run time and memory depends on the number of possible threshold combinations.
+# For a multi-slope HRU setup the number of combinations is ((thr_max-thr_min)/thr_step)^3.
+# High performance computing may be necessary for more than 20,000 threshold combinations.
+thr_type <- "P"
+thr_min <- 0
+thr_max <- 20
+thr_step <- 1
+
+# RUN the function "TopHRU" (parameters can be also entered within the parenthesis)
+TopHRU(hrus_table, thr_type, thr_min, thr_max, thr_step)
+
