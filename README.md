@@ -9,3 +9,5 @@ in the first line) AFTER you have defined HRUs in your SWAT-GIS interface (e.g. 
 Authors: Robert Schweppe, Michael Strauch
 
 Contact: michael.strauch@ufz.de
+
+https://zenodo.org/badge/latestdoi/18405/michstrauch/TopHRU
