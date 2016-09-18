@@ -1,13 +1,9 @@
----
-title: "TopHRU - Threshold optimization for HRUs in SWAT"
-author: "Michael Strauch, Christoph Schuerz, and Robert Schweppe"
-output: html_document
----
+#topHRU - threshold optimization for HRUs in SWAT
 
-###About
+### About
 topHRU calculates the spatial error measure aREA (average Relative Error of Aggregation) for different input data aggregation levels of the Soil and Water Assessment Tool (SWAT). Input aggregation in SWAT is based on HRU thresholds for land use, soil, and slope. topHRU allows identifying pareto-optimal threshold combinations (minimal spatial error for a given number of HRUs) to minimze the trade-off between computation time and model error.
 
-###Installing the topHRU package
+### Installing the topHRU package
 To install the package please execute following lines in R:
 
 
@@ -20,7 +16,7 @@ if(any(pckg_installed == FALSE)){
 devtools::install_git("https://github.com/chrisschuerz/TopHRU")
 ```
 
-###Input data
+### Input data
 As INPUT you need the "hrus" table from the "project_name.mdb" from a SWAT project data base imported as data.frame in R database. The hrus table will become available AFTER the definition of HRUs in an ArcSWAT project WITHOUT applying thresholds 
 (i.e. 0 for land use, soil, and slope).
 
@@ -58,7 +54,8 @@ and a interactive visualization of the dominated and non dominated threshold com
 hru_analysis$pareto_plot
 ```
 
-###Contact and Reference
+###Authors and Contact
+Authors: Michael Strauch, Christoph Schürz, and Robert Schweppe
 Contact: michael.strauch@ufz.de
 
 https://zenodo.org/badge/latestdoi/18405/michstrauch/TopHRU
