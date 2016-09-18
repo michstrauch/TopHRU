@@ -278,9 +278,10 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   result$Pareto_front[!dom_set] <- "non dominated"
   result$Pareto_front[dom_set] <- "dominated"
 
-  pareto_ggplot <- ggplot2::ggplot(data = result, aes(x = n_HRU,
-                                             y = aREA,
-                                             col = Pareto_front)) +
+  pareto_ggplot <- ggplot2::ggplot(data = result,
+                                   ggplot2::aes(x = n_HRU,
+                                                y = aREA,
+                                                col = Pareto_front)) +
     ggplot2::geom_point(size = 0.7) +
     ggplot2::theme_bw() +
     ggplot2::scale_color_manual(values = c("grey70", "tomato3"))
