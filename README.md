@@ -1,4 +1,7 @@
-#topHRU - threshold optimization for HRUs in SWAT
+#topHRU 
+###threshold optimization for HRUs in SWAT
+######*Michael Strauch, Christoph Schürz, and Robert Schweppe*
+######Contact: michael.strauch@ufz.de
 
 ### About
 topHRU calculates the spatial error measure aREA (average Relative Error of Aggregation) for different input data aggregation levels of the Soil and Water Assessment Tool (SWAT). Input aggregation in SWAT is based on HRU thresholds for land use, soil, and slope. topHRU allows identifying pareto-optimal threshold combinations (minimal spatial error for a given number of HRUs) to minimze the trade-off between computation time and model error.
@@ -54,8 +57,6 @@ and a interactive visualization of the dominated and non dominated threshold com
 hru_analysis$pareto_plot
 ```
 
-###Authors and Contact
-Authors: Michael Strauch, Christoph Schürz, and Robert Schweppe
 Contact: michael.strauch@ufz.de
 
 https://zenodo.org/badge/latestdoi/18405/michstrauch/TopHRU
