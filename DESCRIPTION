@@ -1,0 +1,23 @@
+Package: topHRU
+Type: Package
+Title: Threshold optimization for HRUs in SWAT
+Version: 0.1.1
+Authors@R: c(
+    person("Michael", "Strauch", email = "michael.strauch@ufz.de", role = c("aut", "cre")),
+    person("Robert", "Schweppe", role = "aut"),
+    person("Christoph", "Schürz", email = "christoph.schuerz@boku.ac.at", role = "aut"))
+Description: Calculates the spatial error (aREA - average Relative Error
+    of Aggregation) for thousands of different SWAT input data
+    aggregation levels based on HRU thresholds for land use,
+    soil, and (optional) slope and identifies pareto-optimal
+    solutions to minimze the trade-off between computation time
+    and spatial error
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports:
+    abind,
+    emoa,
+    ggplot2,
+    plotly
+RoxygenNote: 5.0.1
