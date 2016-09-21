@@ -15,7 +15,8 @@ pckg_installed <- req_pckg %in% rownames(installed.packages())
 if(any(pckg_installed == FALSE)){
   install.packages(req_pckg[!pckg_installed])
 }
-devtools::install_git("https://github.com/chrisschuerz/TopHRU")
+rm(req_pckg, pckg_installed)
+devtools::install_git("https://github.com/michstrauch/TopHRU")
 ```
 
 ### Input data

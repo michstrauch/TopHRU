@@ -1,11 +1,11 @@
 Package: topHRU
 Type: Package
 Title: Threshold optimization for HRUs in SWAT
-Version: 0.1.1
+Version: 1.2.1
 Authors@R: c(
     person("Michael", "Strauch", email = "michael.strauch@ufz.de", role = c("aut", "cre")),
     person("Robert", "Schweppe", role = "aut"),
-    person("Christoph", "Schürz", email = "christoph.schuerz@boku.ac.at", role = "aut"))
+    person("Christoph", "Schürz", email = "christoph.schuerz@boku.ac.at", role = "aut", "cre"))
 Description: Calculates the spatial error (aREA - average Relative Error
     of Aggregation) for thousands of different SWAT input data
     aggregation levels based on HRU thresholds for land use,
