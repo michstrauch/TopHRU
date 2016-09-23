@@ -256,21 +256,14 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   # the so "updated AREA" is then aggregated according to each hierarchy level
   # The number of resulting HRU is calculated by counting all cells of "updated
   # AREA" that are > 0
+
+
+  #Set up a progress bar that documents the progress of calculation
+  print(paste("Calculating aREA for ", nrow(thrs_comb),
+              "threshold combinations:"))
+  prgr_bar <- txtProgressBar(min = 0, max = 100, initial = 0, style = 3)
+
   for (j in 1:nrow(thrs_comb)){
-    # area_mod <- with(hru_data, ARSLP *
-    #                    ifelse(luse_multi, luse_fac[cbind(LANDUSE, SUBBASIN,
-    #                                   which(luse_seq == thrs_comb[j, 1]))],
-    #                           1) *
-    #                    ifelse(soil_multi, soil_fac[cbind(SOIL, SUBBASIN,
-    #                                                      LANDUSE,
-    #                                   which(soil_seq == thrs_comb[j, 2]))],
-    #                           1) *
-    #                    ifelse(slp_multi, slp_fac[cbind(SLP, SUBBASIN,
-    #                                                    LANDUSE, SOIL,
-    #                                  which(slp_seq == thrs_comb[j, 3]))],
-    #                           1))
-
-
     area_mod <- with(hru_data, ARSLP *
                             luse_fac[cbind(LANDUSE, SUBBASIN,
                                      which(luse_seq == thrs_comb[j, 1]))]*
@@ -292,6 +285,9 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
     }
 
     result[j,2] <- with(hru_data, sum(area_mod > 0))
+
+    # Update progress bar
+    setTxtProgressBar(prgr_bar, (j/nrow(thrs_comb)*100))
   }
 
   # Set non existing values from NA to 0.
