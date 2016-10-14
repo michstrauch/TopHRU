@@ -383,17 +383,17 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
     ggplot2::scale_color_manual(values = c("grey70", "tomato3"))
 
   pareto_plotly <- plotly::plotly_build(pareto_ggplot)
-  label_dom <- pareto_plotly$data[[2]]$text
+  label_dom <- pareto_plotly$x$data[[2]]$text
   label_dom <- sub("<br>Pareto_front: dominated","",label_dom)
   label_dom <- paste0("thrs_comb: ", result$thrs_comb[dom_set], "<br>",
                       label_dom)
-  label_nondom <- pareto_plotly$data[[3]]$text
+  label_nondom <- pareto_plotly$x$data[[3]]$text
   label_nondom <- sub("<br>Pareto_front: non dominated","",label_nondom)
   label_nondom <- paste0("thrs_comb: ", result$thrs_comb[!dom_set], "<br>",
                       label_nondom)
-  pareto_plotly$data[[1]]$text <- ""
-  pareto_plotly$data[[2]]$text <- label_dom
-  pareto_plotly$data[[3]]$text <- label_nondom
+  pareto_plotly$x$data[[1]]$text <- ""
+  pareto_plotly$x$data[[2]]$text <- label_dom
+  pareto_plotly$x$data[[3]]$text <- label_nondom
 
   out_list <- list(result_all = result,
                    result_nondominated = result_nondom,

@@ -19,5 +19,5 @@ Imports:
     abind,
     emoa,
     ggplot2,
-    plotly
+    plotly (>= 4.5.2)
 RoxygenNote: 5.0.1
