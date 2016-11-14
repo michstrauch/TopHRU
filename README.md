@@ -10,13 +10,9 @@ To install the package please execute following lines in R:
 
 
 ```r
-req_pckg <- c("abind", "devtools", "emoa", "ggplot2", "plotly")
-pckg_installed <- req_pckg %in% rownames(installed.packages())
-if(any(pckg_installed == FALSE)){
-  install.packages(req_pckg[!pckg_installed])
-}
-rm(req_pckg, pckg_installed)
-devtools::install_git("https://github.com/michstrauch/TopHRU")
+install.packages("devtools")
+devtools::install_git("https://github.com/michstrauch/TopHRU", dependencies = TRUE)
+
 ```
 
 ### Input data
