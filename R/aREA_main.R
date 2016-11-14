@@ -9,17 +9,20 @@
 #' @param weight Weights for land use, soil and slope for the calculation of
 #'   aREA. Any given numbers will be normalized.
 #'
+#' @importFrom abind abind
+#' @importFrom emoa is_dominated
 #' @return \code{.$result_all}: data.frame with the complete results of the
 #'   analysis.\cr \code{.$result_nondominated}: Results for the non dominated threshold
 #'   combinations.\cr \code{.$pareto_plot}: Interactive plot of the dominated and non
 #'   dominated threshold combination.
 #' @export
 #'
+#'
 #' @examples
 #'
 #' hru_data <- hru_data
 #' hru_analysis <- topHRU(hru_data)
-#' hru_analysis$pareto_plot
+#' View(hru_analysis$result_nondominated)
 
 topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
                    slp_thrs = c(0,20,5), thrs_type = c("P", "A"),
@@ -357,47 +360,20 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   weight <- 3*weight/sum(weight)
   n_cat  <- 3 - sum(c(!luse_multi, !soil_multi, !slp_multi))
 
-  result[,6] <- apply(abind::abind(weight[1]*luse_err,
+  result[,6] <- apply(abind(weight[1]*luse_err,
                                    weight[2]*soil_err,
                                    weight[3]*slp_err, along = 2), 3, aREA) /
     (n_cat * with(hru_data, sum(ARSLP)))
 
-  dom_set <- emoa::is_dominated(as.matrix(t(result[,c(2,6)])))
+  dom_set <- is_dominated(as.matrix(t(result[,c(2,6)])))
   result_nondom <- result[!dom_set,]
 
   result$Pareto_front <- NA
   result$Pareto_front[!dom_set] <- "non dominated"
   result$Pareto_front[dom_set] <- "dominated"
 
-  pareto_ggplot <- ggplot2::ggplot() +
-    ggplot2::geom_line(data = result_nondom, ggplot2::aes(x = n_HRU,
-                                                          y = aREA),
-                       col = "tomato3",
-                       lwd = 0.3, alpha = 0.5)+
-    ggplot2::geom_point(data = result,
-                        ggplot2::aes(x = n_HRU,
-                                     y = aREA,
-                                     col = Pareto_front),
-                        size = 0.7) +
-    ggplot2::theme_bw() +
-    ggplot2::scale_color_manual(values = c("grey70", "tomato3"))
-
-  pareto_plotly <- plotly::plotly_build(pareto_ggplot)
-  label_dom <- pareto_plotly$x$data[[2]]$text
-  label_dom <- sub("<br>Pareto_front: dominated","",label_dom)
-  label_dom <- paste0("thrs_comb: ", result$thrs_comb[dom_set], "<br>",
-                      label_dom)
-  label_nondom <- pareto_plotly$x$data[[3]]$text
-  label_nondom <- sub("<br>Pareto_front: non dominated","",label_nondom)
-  label_nondom <- paste0("thrs_comb: ", result$thrs_comb[!dom_set], "<br>",
-                      label_nondom)
-  pareto_plotly$x$data[[1]]$text <- ""
-  pareto_plotly$x$data[[2]]$text <- label_dom
-  pareto_plotly$x$data[[3]]$text <- label_nondom
-
   out_list <- list(result_all = result,
-                   result_nondominated = result_nondom,
-                   pareto_plot = pareto_plotly)
+                   result_nondominated = result_nondom)
 
   return(out_list)
 }
