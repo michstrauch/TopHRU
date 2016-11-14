@@ -11,6 +11,7 @@
 #'
 #' @importFrom abind abind
 #' @importFrom emoa is_dominated
+#'
 #' @return \code{.$result_all}: data.frame with the complete results of the
 #'   analysis.\cr \code{.$result_nondominated}: Results for the non dominated threshold
 #'   combinations.\cr \code{.$pareto_plot}: Interactive plot of the dominated and non
@@ -361,8 +362,8 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   n_cat  <- 3 - sum(c(!luse_multi, !soil_multi, !slp_multi))
 
   result[,6] <- apply(abind(weight[1]*luse_err,
-                                   weight[2]*soil_err,
-                                   weight[3]*slp_err, along = 2), 3, aREA) /
+                            weight[2]*soil_err,
+                            weight[3]*slp_err, along = 2), 3, aREA) /
     (n_cat * with(hru_data, sum(ARSLP)))
 
   dom_set <- is_dominated(as.matrix(t(result[,c(2,6)])))

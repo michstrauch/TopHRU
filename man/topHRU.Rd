@@ -35,6 +35,6 @@ topHRU - threshold optimization for HRUs in SWAT
 
 hru_data <- hru_data
 hru_analysis <- topHRU(hru_data)
-hru_analysis$pareto_plot
+View(hru_analysis$result_nondominated)
 }
 
