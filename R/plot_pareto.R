@@ -31,17 +31,17 @@ plot_pareto <- function(hru_analysis, interactive = TRUE){
     label_dom <- pareto_plotly$x$data[[2]]$text
     label_dom <- sub("<br>Pareto_front: dominated","",label_dom)
     label_dom <- paste0("thrs_comb: ",
-                        hru_analysis$thrs_comb[
-                          hru_analysis$Pareto_front == "dominated"],
+                        hru_analysis$result_all$thrs_comb[
+                          hru_analysis$result_all$Pareto_front == "dominated"],
                         "<br>",
                         label_dom)
     label_nondom <- pareto_plotly$x$data[[3]]$text
     label_nondom <- sub("<br>Pareto_front: non dominated","",label_nondom)
     label_nondom <- paste0("thrs_comb: ",
-                           hru_analysis$thrs_comb[
-                             hru_analysis$Pareto_front == "non dominated"],
+                           hru_analysis$result_all$thrs_comb[
+                             hru_analysis$result_all$Pareto_front == "non dominated"],
                            "<br>",
-                           label_dom)
+                           label_nondom)
     pareto_plotly$x$data[[1]]$text <- ""
     pareto_plotly$x$data[[2]]$text <- label_dom
     pareto_plotly$x$data[[3]]$text <- label_nondom
@@ -57,6 +57,4 @@ plot_pareto <- function(hru_analysis, interactive = TRUE){
       scale_color_manual(values = c("grey70", "tomato3"))
     pareto_ggplot
   }
-
-
 }
