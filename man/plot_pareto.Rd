@@ -4,7 +4,7 @@
 \alias{plot_pareto}
 \title{Plot results of HRU analysis}
 \usage{
-plot_pareto(hru_analysis, interactive = TRUE)
+plot_pareto(hru_analysis, aREA_thrs = NULL, HRU_thrs = NULL)
 }
 \arguments{
 \item{hru_analysis}{list structure that is the result of the function

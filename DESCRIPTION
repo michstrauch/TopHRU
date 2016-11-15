@@ -1,7 +1,7 @@
 Package: topHRU
 Type: Package
 Title: Threshold optimization for HRUs in SWAT
-Version: 1.2.1
+Version: 1.2.2
 Authors@R: c(
     person("Michael", "Strauch", email = "michael.strauch@ufz.de", role = c("aut", "cre")),
     person("Robert", "Schweppe", role = "aut"),
