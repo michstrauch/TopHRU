@@ -263,9 +263,9 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
 
 
   #Set up a progress bar that documents the progress of calculation
-  print(paste("Calculating aREA for ", nrow(thrs_comb),
+  print(paste("Calculating aREA for", nrow(thrs_comb),
               "threshold combinations:"))
-  prgr_bar <- txtProgressBar(min = 0, max = 100, initial = 0, style = 3)
+  prgr_bar <- txtProgressBar(max = nrow(thrs_comb), initial = 0, style = 3)
 
   for (j in 1:nrow(thrs_comb)){
     area_mod <- with(hru_data, ARSLP *
@@ -291,7 +291,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
     result[j,2] <- with(hru_data, sum(area_mod > 0))
 
     # Update progress bar
-    setTxtProgressBar(prgr_bar, (j/nrow(thrs_comb)*100))
+    setTxtProgressBar(prgr_bar, j)
   }
 
   # Set non existing values from NA to 0.
