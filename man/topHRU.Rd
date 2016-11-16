@@ -4,11 +4,11 @@
 \alias{topHRU}
 \title{topHRU - threshold optimization for HRUs in SWAT}
 \usage{
-topHRU(hru_data, luse_thrs = c(0, 20, 5), soil_thrs = c(0, 20, 5),
+topHRU(hru_table, luse_thrs = c(0, 20, 5), soil_thrs = c(0, 20, 5),
   slp_thrs = c(0, 20, 5), thrs_type = c("P", "A"), weight = c(1, 1, 1))
 }
 \arguments{
-\item{hru_data}{data.frame with the unaggregated information for the HRUs}
+\item{hru_table}{data.frame with the unaggregated information for the HRUs}
 
 \item{luse_thrs}{Land use threshold vector with min, max and stepwidth.}
 
@@ -33,8 +33,8 @@ topHRU - threshold optimization for HRUs in SWAT
 }
 \examples{
 
-hru_data <- hru_data
-hru_analysis <- topHRU(hru_data)
+hru_table <- hru_table
+hru_analysis <- topHRU(hru_table)
 View(hru_analysis$result_nondominated)
 }
 

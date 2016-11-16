@@ -1,6 +1,6 @@
 #' topHRU - threshold optimization for HRUs in SWAT
 #'
-#' @param hru_data data.frame with the unaggregated information for the HRUs
+#' @param hru_table data.frame with the unaggregated information for the HRUs
 #' @param luse_thrs Land use threshold vector with min, max and stepwidth.
 #' @param soil_thrs Soil threshold vector with min, max and stepwidth.
 #' @param slp_thrs Slope threshold vector with min, max and stepwidth.
@@ -18,14 +18,13 @@
 #'   dominated threshold combination.
 #' @export
 #'
-#'
 #' @examples
 #'
-#' hru_data <- hru_data
-#' hru_analysis <- topHRU(hru_data)
+#' hru_table <- hru_table
+#' hru_analysis <- topHRU(hru_table)
 #' View(hru_analysis$result_nondominated)
 
-topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
+topHRU <- function(hru_table, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
                    slp_thrs = c(0,20,5), thrs_type = c("P", "A"),
                    weight = c(1,1,1)) {
 
@@ -44,19 +43,19 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   luse_multi <- TRUE
   soil_multi <- TRUE
   slp_multi  <- TRUE
-  if (length(unique(hru_data$LANDUSE)) == 1) {
+  if (length(unique(hru_table$LANDUSE)) == 1) {
     warning("Only one unique land use class found. Input land use thresholds nwill be ignored!")
     luse_thrs <- c(0,0,1)
     luse_multi <- FALSE
   }
 
-  if (length(unique(hru_data$SOIL)) == 1) {
+  if (length(unique(hru_table$SOIL)) == 1) {
     warning("Only one unique soil class found. Input soil thresholds will be ignored!")
     soil_thrs <- c(0,0,1)
     soil_multi <- FALSE
   }
 
-  if (length(unique(hru_data$SLP)) == 1) {
+  if (length(unique(hru_table$SLP)) == 1) {
     warning("Only one unique slope class found. Input slope thresholds will be ignored!")
     slp_thrs <- c(0,0,1)
     slp_multi <- FALSE
@@ -79,10 +78,10 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
 
 
 # Read out all existing categories for subbasin, landuse, soil and slope ---
-  sub_id  <- sort(unique(hru_data$SUBBASIN))
-  luse_id <- sort(unique(hru_data$LANDUSE))
-  soil_id <- sort(unique(hru_data$SOIL))
-  slp_id  <- sort(unique(hru_data$SLP))
+  sub_id  <- sort(unique(hru_table$SUBBASIN))
+  luse_id <- sort(unique(hru_table$LANDUSE))
+  soil_id <- sort(unique(hru_table$SOIL))
+  slp_id  <- sort(unique(hru_table$SLP))
 
 
 # Generate data structures -------------------------------------------------
@@ -113,7 +112,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
     luse_default <- matrix(data = NA, ncol = length(sub_id),
                            nrow = length(luse_id), dimnames = list(luse_id,
                                                                    sub_id))
-    luse_default <- with(hru_data, tapply(ARSLP, list(LANDUSE, SUBBASIN),
+    luse_default <- with(hru_table, tapply(ARSLP, list(LANDUSE, SUBBASIN),
                                           sum))
     luse_default[is.na(luse_default)] <- 0
 
@@ -146,7 +145,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
     soil_default <- array(data = NA, dim = c(length(soil_id), length(sub_id),
                                              length(luse_id)),
                           dimnames = list(soil_id, sub_id, luse_id))
-    soil_default[,,] <- with(hru_data, tapply(ARSLP, list(SOIL, SUBBASIN,
+    soil_default[,,] <- with(hru_table, tapply(ARSLP, list(SOIL, SUBBASIN,
                                                           LANDUSE), sum))
     soil_default[,,][is.na(soil_default[,,])] <- 0
 
@@ -179,7 +178,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
     slp_default <- array(data = NA, dim = c(length(slp_id), length(sub_id),
                                             length(luse_id), length(soil_id)),
                          dimnames = list(slp_id, sub_id, luse_id, soil_id))
-    slp_default[,,,] <- with(hru_data, tapply(ARSLP, list(SLP, SUBBASIN,
+    slp_default[,,,] <- with(hru_table, tapply(ARSLP, list(SLP, SUBBASIN,
                                                           LANDUSE, SOIL),
                                               sum))
     slp_default[,,,][is.na(slp_default[,,,])] <- 0
@@ -255,7 +254,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   # threshold combination
   # AREA for each default HRU is multiplied by the factors for each level
   # Factors are selected from factor data structure, e.g. SLOPE.fac
-  # Using the columns LANDUSE, SOIL, SLOPE in hru_data and the according
+  # Using the columns LANDUSE, SOIL, SLOPE in hru_table and the according
   # threshold as indices
   # the so "updated AREA" is then aggregated according to each hierarchy level
   # The number of resulting HRU is calculated by counting all cells of "updated
@@ -268,7 +267,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   prgr_bar <- txtProgressBar(max = nrow(thrs_comb), initial = 0, style = 3)
 
   for (j in 1:nrow(thrs_comb)){
-    area_mod <- with(hru_data, ARSLP *
+    area_mod <- with(hru_table, ARSLP *
                             luse_fac[cbind(LANDUSE, SUBBASIN,
                                      which(luse_seq == thrs_comb[j, 1]))]*
                             soil_fac[cbind(SOIL, SUBBASIN, LANDUSE,
@@ -276,19 +275,19 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
                             slp_fac[cbind(SLP, SUBBASIN, LANDUSE, SOIL,
                                     which(slp_seq == thrs_comb[j, 3]))])
     if(luse_multi){
-      luse_cal[,,j] <- with(hru_data, tapply(area_mod,
+      luse_cal[,,j] <- with(hru_table, tapply(area_mod,
                                              list(SUBBASIN, LANDUSE), sum))
     }
     if(soil_multi){
-      soil_cal[,,j] <- with(hru_data, tapply(area_mod,
+      soil_cal[,,j] <- with(hru_table, tapply(area_mod,
                                              list(SUBBASIN, SOIL), sum))
     }
     if(slp_multi){
-      slp_cal[,,j]  <- with(hru_data, tapply(area_mod,
+      slp_cal[,,j]  <- with(hru_table, tapply(area_mod,
                                              list(SUBBASIN, SLP), sum))
     }
 
-    result[j,2] <- with(hru_data, sum(area_mod > 0))
+    result[j,2] <- with(hru_table, sum(area_mod > 0))
 
     # Update progress bar
     setTxtProgressBar(prgr_bar, j)
@@ -307,7 +306,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   # by two.
 
   if(luse_multi){
-    luse_ref <- array(rep(with(hru_data,
+    luse_ref <- array(rep(with(hru_table,
                                tapply(ARSLP, list(SUBBASIN, LANDUSE), sum)),
                           times = nrow(thrs_comb)),
                       dim = c(length(sub_id),length(luse_id),nrow(thrs_comb)))
@@ -317,7 +316,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   }
 
   if(soil_multi){
-    soil_ref <- array(rep(with(hru_data,
+    soil_ref <- array(rep(with(hru_table,
                                tapply(ARSLP, list(SUBBASIN, SOIL), sum)),
                           times = nrow(thrs_comb)),
                       dim = c(length(sub_id),length(soil_id),nrow(thrs_comb)))
@@ -327,7 +326,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   }
 
   if(slp_multi) {
-    slp_ref <- array(rep(with(hru_data,
+    slp_ref <- array(rep(with(hru_table,
                               tapply(ARSLP, list(SUBBASIN, SLP), sum)),
                          times = nrow(thrs_comb)),
                        dim = c(length(sub_id),length(slp_id),nrow(thrs_comb)))
@@ -348,13 +347,13 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
 
   # Write single residual contributions of the three attributes
   if(luse_multi){
-    result[,3] <- apply(luse_err, 3, aREA) / with(hru_data, sum(ARSLP))
+    result[,3] <- apply(luse_err, 3, aREA) / with(hru_table, sum(ARSLP))
   }
   if(soil_multi){
-  result[,4] <- apply(soil_err, 3, aREA) / with(hru_data, sum(ARSLP))
+  result[,4] <- apply(soil_err, 3, aREA) / with(hru_table, sum(ARSLP))
   }
   if(slp_multi){
-  result[,5] <- apply(slp_err,  3, aREA) / with(hru_data, sum(ARSLP))
+  result[,5] <- apply(slp_err,  3, aREA) / with(hru_table, sum(ARSLP))
   }
 
   # Apply error measure
@@ -364,7 +363,7 @@ topHRU <- function(hru_data, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
   result[,6] <- apply(abind(weight[1]*luse_err,
                             weight[2]*soil_err,
                             weight[3]*slp_err, along = 2), 3, aREA) /
-    (n_cat * with(hru_data, sum(ARSLP)))
+    (n_cat * with(hru_table, sum(ARSLP)))
 
   dom_set <- is_dominated(as.matrix(t(result[,c(2,6)])))
   result_nondom <- result[!dom_set,]
