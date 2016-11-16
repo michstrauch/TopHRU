@@ -9,7 +9,7 @@
 #' @return Returns the hru_table as a data.frame
 #' @export
 
-extract_HRU <- function(fle_path) {
+extract_HRU <- function(file_path) {
   if(grepl(".mdb$",file_path)){
     mdb_con <- odbcConnectAccess(file_path)
     hru_table <- sqlQuery( mdb_con , paste("select * from hrus"))

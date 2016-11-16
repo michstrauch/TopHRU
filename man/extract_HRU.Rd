@@ -4,7 +4,7 @@
 \alias{extract_HRU}
 \title{Extract the hrus table required for topHRU()}
 \usage{
-extract_HRU(fle_path)
+extract_HRU(file_path)
 }
 \arguments{
 \item{fle_path}{character string providing the absolute file path. The
