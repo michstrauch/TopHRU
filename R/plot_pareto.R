@@ -34,14 +34,14 @@ plot_pareto <- function(hru_analysis, aREA_thrs = NULL, HRU_thrs = NULL){
     hru_analysis$result_all$Legend <- paste(
       hru_analysis$result_all$Pareto_front,
       hru_analysis$result_all$Threshold, sep = ", ") %>%
-      ordered(., levels = c("non dominated, below",
-                            "dominated, below",
-                            "non dominated, above",
-                            "dominated, above"))
+      ordered(., levels = c("dominated, below",
+                            "non dominated, below",
+                            "dominated, above",
+                            "non dominated, above"))
   } else {
     hru_analysis$result_all$Legend <-
       hru_analysis$result_all$Pareto_front %>%
-      ordered(., levels = c("non dominated", "dominated"))
+      ordered(., levels = c("dominated", "non dominated"))
   }
 
   pareto_ggplot <- ggplot() +
@@ -55,10 +55,10 @@ plot_pareto <- function(hru_analysis, aREA_thrs = NULL, HRU_thrs = NULL){
 
   if(any(hru_analysis$result_all$Threshold == "above")){
     pareto_ggplot <- pareto_ggplot +
-    scale_color_manual(values = c("tomato3", "grey65", "tomato1", "grey90"), drop = FALSE)
+    scale_color_manual(values = c("grey65","tomato3", "grey90", "tomato1"), drop = FALSE)
   } else {
     pareto_ggplot <- pareto_ggplot +
-      scale_color_manual(values = c("tomato3", "grey65"), drop = FALSE)
+      scale_color_manual(values = c("grey65", "tomato3"), drop = FALSE)
   }
   if(!is.null(HRU_thrs)){
     pareto_ggplot <- pareto_ggplot +
@@ -72,9 +72,9 @@ plot_pareto <- function(hru_analysis, aREA_thrs = NULL, HRU_thrs = NULL){
 
   pareto_plotly <- plotly_build(pareto_ggplot)
 
-  legend_lbl <- c("dominated", "non dominated",
-                  "dominated, above", "non dominated, above",
-                  "dominated, below", "non dominated, below")
+  legend_lbl <- c("dominated, above", "non dominated, above",
+                  "dominated, below", "non dominated, below",
+                  "dominated", "non dominated")
 
   for (i in 1:length(pareto_plotly$x$data)){
     plotly_lbl <- pareto_plotly$x$data[[i]]$text[1] %>%
