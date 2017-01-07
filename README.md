@@ -10,15 +10,10 @@ To install the package please execute following lines in R:
 
 
 ```r
-install.packages("devtools", dependencies = TRUE)
+install.packages("devtools")
 devtools::install_git("https://github.com/michstrauch/TopHRU", dependencies = TRUE)
 
 ```
-
-### Input data
-As INPUT you need the "hrus" table from the "project_name.mdb" from a SWAT project database imported as data.frame in R database. The hrus table will become available AFTER the definition of HRUs in an ArcSWAT project WITHOUT applying thresholds 
-(i.e. 0 for land use, soil, and slope).
-
 ### Minimum example
 The package contains the template dataset hru_data. 
 To see the structure of the required table you can compare with the template dataset:
@@ -28,7 +23,16 @@ library(topHRU)
 View(hru_data)
 ```
 
+#### Input data
+As INPUT you need the "hrus" table from the "project_name.mdb" from a SWAT project database. The hrus table will become available AFTER the definition of HRUs in an ArcSWAT project WITHOUT applying thresholds (i.e. 0 for land use, soil, and slope).
+You can export the hrus table either from a *.csv* file (therefore the hrus table must be extracted from the "project_name.mdb" and saved to "name.csv" prior to loading it in R. Otherwise you can load the table directly from the "project_name.mdb". Therefore the *RODBC* package must be installed and a **32 bit version** of R must be used.
 
+```r
+hru_table <- extract_hru("path/to/extracted/hrus.csv") 
+#or
+hru_table <- extract_hru("path/to/project_name.mdb") 
+```
+####Analysis
 To run an HRU analysis for the template dataset run:
 
 ```r
@@ -41,14 +45,16 @@ The resulting list holds the complete results of the HRU analysis,
 hru_analysis$result_all
 ```
 
-a reduced result table only showing the pareto-optimal threshold combinations,
+and a reduced result table only showing the pareto-optimal threshold combinations,
 
 ```r
 hru_analysis$result_nondominated
 ```
 
-and an interactive visualization of the dominated and nondominated threshold combinations that supports the user in finding an adequate threshold combination for the respective project:
+####Visualization
+An interactive visualization of the dominated and nondominated threshold combinations that supports the user in finding an adequate threshold combination for the respective project is available with the following function call:
 
 ```r
-hru_analysis$pareto_plot
+plot_pareto(hru_analysis = hru_analysis, aREA_thrs = 0.1, HRU_thrs = 2000)
 ```
+The two thresholds in the function define the positions of the dashed guide lines that seperate the data points. If these are not needed, no threshold values are provided with the function call.
