@@ -18,7 +18,8 @@ LazyData: true
 Imports:
     abind,
     emoa,
-    RODBC,
     ggplot2 (> 2.1.0),
     plotly (>= 4.5.6)
+Suggests:
+    RODBC
 RoxygenNote: 5.0.1
