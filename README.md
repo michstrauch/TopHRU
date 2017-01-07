@@ -10,7 +10,7 @@ To install the package please execute following lines in R:
 
 
 ```r
-install.packages("devtools")
+install.packages("devtools", dependencies = TRUE)
 devtools::install_git("https://github.com/michstrauch/TopHRU", dependencies = TRUE)
 
 ```
