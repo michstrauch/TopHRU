@@ -11,7 +11,7 @@ To install the package please execute following lines in R:
 
 ```r
 install.packages("devtools")
-devtools::install_git("https://github.com/michstrauch/TopHRU", dependencies = TRUE)
+devtools::install_github("michstrauch/TopHRU", dependencies = TRUE)
 
 ```
 ### Minimum example
