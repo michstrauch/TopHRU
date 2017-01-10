@@ -19,6 +19,10 @@
 #' @export
 #'
 #' @examples
+#' hru_eval <- evaluate_hru(hru_demo)
+#' plot_pareto(hru_eval, area_thrs = 0.2, interactive = TRUE)
+#' plot_pareto(hru_eval, hru_thrs = 1500, interactive = FALSE)
+
 plot_pareto <- function(eval_hru, area_thrs = NULL, hru_thrs = NULL, interactive = TRUE){
   eval_hru$result_all$Threshold <-
     factor(rep(2, nrow(eval_hru$result_all)),

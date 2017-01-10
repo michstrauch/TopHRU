@@ -28,4 +28,9 @@ Returns an interactive or a static plot object of the aREA
 \description{
 Plot results of HRU analysis
 }
+\examples{
+hru_eval <- evaluate_hru(hru_demo)
+plot_pareto(hru_eval, area_thrs = 0.2, interactive = TRUE)
+plot_pareto(hru_eval, hru_thrs = 1500, interactive = FALSE)
+}
 
