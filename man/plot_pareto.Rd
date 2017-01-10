@@ -4,11 +4,16 @@
 \alias{plot_pareto}
 \title{Plot results of HRU analysis}
 \usage{
-plot_pareto(hru_analysis, aREA_thrs = NULL, HRU_thrs = NULL)
+plot_pareto(eval_hru, area_thrs = NULL, hru_thrs = NULL,
+  interactive = TRUE)
 }
 \arguments{
-\item{hru_analysis}{list structure that is the result of the function
-topHRU()}
+\item{eval_hru}{list structure that is the result of the function
+evaluate_hru()}
+
+\item{area_thrs}{adds a horizontal separation in the visualization at respective threshold value}
+
+\item{hru_thrs}{adds a vertical separation in the visualization at respective threshold value}
 
 \item{interactive}{Logic: \code{TRUE}: Output will be an
 interactive plotly object helpful in selecting adequate threshold

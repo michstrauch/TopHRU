@@ -7,7 +7,7 @@
 #' @return Returns the hru_table as a data.frame
 #' @export
 
-extract_HRU <- function(file_path) {
+extract_hru <- function(file_path) {
   if(grepl(".mdb$",file_path)){
     if (requireNamespace("RODBC", quietly = TRUE)) {
       mdb_con <- RODBC::odbcConnectAccess(file_path)

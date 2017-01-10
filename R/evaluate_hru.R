@@ -14,17 +14,14 @@
 #'
 #' @return \code{.$result_all}: data.frame with the complete results of the
 #'   analysis.\cr \code{.$result_nondominated}: Results for the non dominated threshold
-#'   combinations.\cr \code{.$pareto_plot}: Interactive plot of the dominated and non
-#'   dominated threshold combination.
+#'   combinations.
 #' @export
 #'
 #' @examples
-#'
-#' hru_table <- hru_table
-#' hru_analysis <- topHRU(hru_table)
-#' View(hru_analysis$result_nondominated)
+#' head(hru_data)
+#' hru_analysis <- evaluate_hru(hru_table = hru_data)
 
-topHRU <- function(hru_table, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
+evaluate_hru <- function(hru_table, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
                    slp_thrs = c(0,20,5), thrs_type = c("P", "A"),
                    weight = c(1,1,1)) {
 
