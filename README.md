@@ -20,7 +20,7 @@ To see the structure of the required table you can compare with the template dat
 
 ```r
 library(topHRU)
-View(hru_data)
+View(hru_demo)
 ```
 
 #### Input data
@@ -36,25 +36,31 @@ hru_table <- extract_hru("path/to/project_name.mdb")
 To run an HRU analysis for the template dataset run:
 
 ```r
-hru_analysis <- topHRU(hru_data)
+hru_eval <- evaluate_hru(hru_demo)
 ```
 
 The resulting list holds the complete results of the HRU analysis,
 
 ```r
-hru_analysis$result_all
+hru_eval$result_all
 ```
 
 and a reduced result table only showing the pareto-optimal threshold combinations,
 
 ```r
-hru_analysis$result_nondominated
+hru_eval$result_nondominated
 ```
 
 ####Visualization
-An interactive visualization of the dominated and nondominated threshold combinations that supports the user in finding an adequate threshold combination for the respective project is available with the following function call:
+*plot_pareto* provides two options for visualization. The default is an interactive visualization of the dominated and nondominated threshold combinations, where the function returns a *plotly* object. Such plot supports the user in finding an adequate threshold combination for the respective project is available with the following function call:
 
 ```r
-plot_pareto(hru_analysis = hru_analysis, aREA_thrs = 0.1, HRU_thrs = 2000)
+plot_pareto(hru_analysis = hru_analysis, area_thrs = 0.1, hru_thrs = 2000)
 ```
-The two thresholds in the function define the positions of the dashed guide lines that seperate the data points. If these are not needed, no threshold values are provided with the function call.
+For publication a ggplot object is more useful. Hence setting the parameter *interactive = FALSE* returns a static plot:
+
+
+```r
+plot_pareto(hru_analysis = hru_analysis, area_thrs = 0.1, hru_thrs = 2000, interactive = FALSE)
+```
+The two threshold parameters in the function define the positions of the dashed guide lines that seperate the data points. If these are not needed, no threshold values are provided with the function call.
