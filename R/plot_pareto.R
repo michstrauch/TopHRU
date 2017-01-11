@@ -65,7 +65,7 @@ plot_pareto <- function(eval_hru, area_thrs = NULL, hru_thrs = NULL, interactive
     pareto_plot <- pareto_plot +
     scale_color_manual(values = c("grey65","tomato3", "grey90", "tomato1"), drop = FALSE)
   } else {
-    pareto_ggplot <- pareto_plot +
+    pareto_plot <- pareto_plot +
       scale_color_manual(values = c("grey65", "tomato3"), drop = FALSE)
   }
   if(!is.null(hru_thrs)){
