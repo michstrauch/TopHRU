@@ -18,8 +18,8 @@
 #' @export
 #'
 #' @examples
-#' head(hru_data)
-#' hru_analysis <- evaluate_hru(hru_table = hru_data)
+#' head(hru_demo)
+#' hru_analysis <- evaluate_hru(hru_table = hru_demo)
 
 evaluate_hru <- function(hru_table, luse_thrs = c(0,20,5), soil_thrs = c(0,20,5),
                    slp_thrs = c(0,20,5), thrs_type = c("P", "A"),

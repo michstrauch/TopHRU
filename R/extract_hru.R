@@ -1,6 +1,6 @@
 #' Extract the hrus table required for topHRU()
 #'
-#' @param fle_path character string providing the absolute file path. The
+#' @param file_path character string providing the absolute file path. The
 #'   file to read must be either the project.mdb data base file or a .csv
 #'   file to where the hrus table from the project.mdb data base was saved.
 #'

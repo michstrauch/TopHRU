@@ -31,7 +31,7 @@ aREA. Any given numbers will be normalized.}
 topHRU - threshold optimization for HRUs in SWAT
 }
 \examples{
-head(hru_data)
-hru_analysis <- evaluate_hru(hru_table = hru_data)
+head(hru_demo)
+hru_analysis <- evaluate_hru(hru_table = hru_demo)
 }
 
