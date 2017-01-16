@@ -18,6 +18,7 @@ LazyData: true
 Imports:
     abind,
     emoa,
+    dplyr,
     ggplot2 (> 2.1.0),
     plotly (>= 4.5.6),
     scales (>= 0.4.1),
