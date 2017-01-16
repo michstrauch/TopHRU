@@ -12,7 +12,7 @@ To install the package please execute following lines in R:
 
 
 ```r
-install.packages(c("devtools","abind", "emoa", "dplyr", "ggplot2","miniUI"))
+install.packages(c("devtools","abind", "emoa", "dplyr", "ggplot2","miniUI","yaml"))
 devtools::install_github(c("ropensci/plotly","michstrauch/TopHRU"))
 
 ```
