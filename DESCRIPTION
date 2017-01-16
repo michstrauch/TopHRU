@@ -24,7 +24,8 @@ Imports:
     scales (>= 0.4.1),
     base64enc,
     htmlwidgets,
-    viridisLite
+    viridisLite,
+    DBI
 Suggests:
     RODBC
 RoxygenNote: 5.0.1
