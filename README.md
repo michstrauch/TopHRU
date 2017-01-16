@@ -13,7 +13,8 @@ To install the package please execute following lines in R:
 
 ```r
 install.packages("devtools")
-devtools::install_github("michstrauch/TopHRU", dependencies = TRUE)
+install.packages(c("abind", "emoa", "dplyr", "ggplot2", "potly")
+devtools::install_github("michstrauch/TopHRU")
 
 ```
 ### Minimum example
