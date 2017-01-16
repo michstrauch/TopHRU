@@ -20,8 +20,7 @@ Imports:
     emoa,
     dplyr,
     ggplot2 (>= 2.1.0),
-    plotly (>= 4.5.6),
-
+    plotly (>= 4.5.6)
 Suggests:
     RODBC
 RoxygenNote: 5.0.1
