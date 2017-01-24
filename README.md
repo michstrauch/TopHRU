@@ -12,7 +12,8 @@ To install the package please execute following lines in R:
 
 
 ```r
-install.packages(c("devtools","abind", "emoa", "dplyr", "ggplot2","plotly"), dependencies = NA)
+install.packages("devtools")
+install.packages(c("abind", "emoa", "dplyr", "ggplot2","plotly"))
 devtools::install_github("michstrauch/TopHRU")
 
 ```
