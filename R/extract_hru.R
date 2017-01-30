@@ -8,15 +8,15 @@
 #' @export
 
 extract_hru <- function(file_path) {
-  if(grepl(".mdb$",file_path)){
+  if(grepl("\\.mdb$",file_path)){
     if (requireNamespace("RODBC", quietly = TRUE)) {
-      mdb_con <- RODBC::odbcConnectAccess(file_path)
+      mdb_con <- RODBC::odbcDriverConnect(paste0("Driver=Microsoft Access Driver (*.mdb, *.accdb); DBQ=", file_path))
       hru_table <- RODBC::sqlQuery( mdb_con , paste("select * from hrus"))
     } else {
       stop("RODBC required if hrus table is loaded from 'project.mdb'",
            call. = FALSE)
-      }
-  } else if(grepl(".csv$",file_path)){
+    }
+  } else if(grepl("\\.csv$",file_path)){
     hru_table <- read.csv(file = file_path)
   } else{
     stop("File type must be either '.csv' or '.mdb'")
