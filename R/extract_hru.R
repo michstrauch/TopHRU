@@ -10,7 +10,7 @@
 extract_hru <- function(file_path) {
   if(grepl("\\.mdb$",file_path)){
     if (requireNamespace("RODBC", quietly = TRUE)) {
-      mdb_con <- RODBC::odbcDriverConnect(paste0("Driver=Microsoft Access Driver (*.mdb, *.accdb); DBQ=", file_path))
+      mdb_con <- RODBC::odbcConnectAccess(file_path)
       hru_table <- RODBC::sqlQuery( mdb_con , paste("select * from hrus"))
     } else {
       stop("RODBC required if hrus table is loaded from 'project.mdb'",
