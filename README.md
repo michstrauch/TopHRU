@@ -1,5 +1,7 @@
 #topHRU - threshold optimization for HRUs in SWAT
+
 ######*Michael Strauch, Christoph Schürz, and Robert Schweppe*
+
 ######Contact: michael.strauch@ufz.de, DOI: https://doi.org/10.5281/zenodo.154379
 
 ### About
