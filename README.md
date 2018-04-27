@@ -2,7 +2,6 @@
 ###### *Michael Strauch, Christoph Schürz, and Robert Schweppe*
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.154379.svg)](https://doi.org/10.5281/zenodo.154379)
-
 ###### Contact: michael.strauch@ufz.de
 
 ### About
